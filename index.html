@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Sit/Stand – Woche 1</title>
+
+<style>
+    /* === Vollbild-Hintergrund über die ganze Seite === */
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        background: #0d0f2a; /* oder ein Bild: url(bg.jpg) */
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        color: #dfe4ff;
+        font-family: Arial, sans-serif;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    h2 {
+        margin-bottom: 25px;
+        color: #e0e6ff;
+        font-weight: 600;
+    }
+
+    .timer {
+        margin: 8px 0;
+        font-size: 1.32em;
+        color: #cbd3ff;
+    }
+
+    /* === Buttons untereinander === */
+    .button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 30px;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    /* === Buttons (30% kleiner als große Version) === */
+    button {
+        padding: 14px 25px;
+        margin: 10px 0;
+        width: 100%;
+        background: rgba(70, 80, 130, 0.45);
+        border: 1px solid rgba(130, 150, 255, 0.35);
+        color: #e4e6ff;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: 0.25s;
+        font-size: 1.26em;
+    }
+
+    button:hover {
+        background: rgba(130, 150, 255, 0.25);
+        box-shadow: 0 0 20px rgba(130, 150, 255, 0.45);
+    }
+
+    /* === ROTER BLINK-EFFEKT direkt auf dem Body === */
+    .blink-red {
+        animation: blinkRed 0.6s infinite alternate;
+    }
+
+    @keyframes blinkRed {
+        from { background-color: rgba(255, 0, 0, 0.20); }
+        to   { background-color: rgba(255, 0, 0, 0.65); }
+    }
+</style>
+</head>
+
+<body id="body">
+
+    <h2 id="status">Gestartet: Stehen</h2>
+
+    <div class="timer">Seit: <span id="seit">00:00</span></div>
+    <div class="timer">Erinnerung in: <span id="remind">--:--</span></div>
+
+    <div class="timer">Gesamt Sitzen: <span id="sitzen">00:00</span></div>
+    <div class="timer">Gesamt Stehen: <span id="stehen">00:00</span></div>
+
+    <div class="button-container">
+        <button onclick="start()">Start</button>
+        <button onclick="stop()">Stop</button>
+        <button onclick="sitze()">Ich sitze jetzt</button>
+        <button onclick="stehe()">Ich stehe jetzt</button>
+    </div>
+
+<script>
+const INTERVAL_SITZEN = 45 * 60; // 45 Minuten
+const INTERVAL_STEHEN = 15 * 60; // 15 Minuten
+
+let state = "Stehen";
+let running = false;
+let paused = false;
+
+let current_elapsed = 0;
+let total_sitzen = 0;
+let total_stehen = 0;
+let next_reminder = INTERVAL_STEHEN;
+let last_ts = null;
+
+function fmtHMS(sec){
+  let s=Math.max(0,Math.round(sec));
+  let h=Math.floor(s/3600);
+  let m=Math.floor((s%3600)/60);
+  s=s%60;
+  return h?`${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`:`${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+}
+
+function updateDisplay(msg){
+  document.getElementById("status").innerText = msg || `Jetzt: ${state}`;
+  document.getElementById("seit").innerText = fmtHMS(current_elapsed);
+  document.getElementById("remind").innerText = running ? fmtHMS(Math.max(0,next_reminder-current_elapsed)):"--:--";
+  document.getElementById("sitzen").innerText = fmtHMS(total_sitzen);
+  document.getElementById("stehen").innerText = fmtHMS(total_stehen);
+}
+
+let blinking = false;
+
+function triggerBlink() {
+    const body = document.getElementById("body");
+    body.classList.add("blink-red");
+    blinking = true;
+}
+
+function stopBlink() {
+    if(blinking){
+        const body = document.getElementById("body");
+        body.classList.remove("blink-red");
+        blinking = false;
+    }
+}
+
+function tick(){
+  if(!running || paused) return;
+  let now = Date.now()/1000;
+  let elapsed = last_ts? Math.min(5, now-last_ts) : 0.2;
+  last_ts = now;
+
+  current_elapsed+=elapsed;
+  if(state==="Sitzen") total_sitzen+=elapsed;
+  else total_stehen+=elapsed;
+
+  let interval = state==="Sitzen"? INTERVAL_SITZEN: INTERVAL_STEHEN;
+
+  if(current_elapsed>=next_reminder){
+    next_reminder += interval;
+    triggerBlink();
+    document.getElementById("status").innerText = `⚠️ Erinnerung: ${state}`;
+    setTimeout(()=>updateDisplay(),2000);
+  }
+  updateDisplay();
+}
+
+setInterval(tick,200);
+
+function startWithState(s){
+  running=true; paused=false; state=s; current_elapsed=0;
+  next_reminder = state==="Sitzen"? INTERVAL_SITZEN: INTERVAL_STEHEN;
+  last_ts = null;
+  updateDisplay(`Gestartet: ${state}`);
+}
+
+function start(){startWithState("Stehen");}
+function stop(){running=false; last_ts=null; updateDisplay("Gestoppt.");}
+
+function sitze(){ 
+    if(!running){startWithState("Sitzen"); return;} 
+    stopBlink();
+    state="Sitzen"; 
+    current_elapsed=0; 
+    next_reminder=INTERVAL_SITZEN; 
+    last_ts=null; 
+    updateDisplay(`Jetzt: ${state}`);
+}
+
+function stehe(){ 
+    if(!running){startWithState("Stehen"); return;} 
+    stopBlink();
+    state="Stehen"; 
+    current_elapsed=0; 
+    next_reminder=INTERVAL_STEHEN; 
+    last_ts=null; 
+    updateDisplay(`Jetzt: ${state}`);
+}
+
+updateDisplay();
+</script>
+
+</body>
+</html>
