@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Sit/Stand – Woche 1</title>
+<title>Sit/Stand – Woche 2</title>
 
 <style>
     /* === Vollbild-Hintergrund über die ganze Seite === */
@@ -12,7 +12,7 @@
         height: 100%;
         width: 100%;
         overflow: hidden;
-        background: #0d0f2a; /* oder ein Bild: url(bg.jpg) */
+        background: #0d0f2a;
         background-size: cover;
         background-repeat: no-repeat;
         background-position: center;
@@ -48,7 +48,7 @@
         max-width: 300px;
     }
 
-    /* === Buttons (30% kleiner als große Version) === */
+    /* === Buttons === */
     button {
         padding: 14px 25px;
         margin: 10px 0;
@@ -97,8 +97,8 @@
     </div>
 
 <script>
-const INTERVAL_SITZEN = 45 * 60; // 45 Minuten
-const INTERVAL_STEHEN = 15 * 60; // 15 Minuten
+const INTERVAL_SITZEN = 25 * 60; // 25 Minuten
+const INTERVAL_STEHEN = 35 * 60; // 35 Minuten
 
 let state = "Stehen";
 let running = false;
